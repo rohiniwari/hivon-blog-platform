@@ -24,9 +24,12 @@ export default function LoginPage() {
     })
 
     if (error) {
-      // Provide a more helpful message for common 400 errors
+      // Provide a more helpful message for common errors
       const msg = error.message?.toLowerCase?.() || ''
-      if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
+      const status = error.status || error.code
+      if (status === 429 || msg.includes('rate limit')) {
+        setError('Too many login attempts. Please wait a few minutes before trying again.')
+      } else if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
         setError('Email not confirmed. Please check your inbox and click the confirmation link before signing in.')
       } else if (msg.includes('invalid login credentials')) {
         setError('Invalid email or password. Please try again.')

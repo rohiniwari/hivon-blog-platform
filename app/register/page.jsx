@@ -33,7 +33,12 @@ export default function RegisterPage() {
     })
 
     if (signUpError) {
-      setError(signUpError.message)
+      const msg = signUpError.message?.toLowerCase?.() || ''
+      if (msg.includes('rate limit') || signUpError.status === 429) {
+        setError('Email rate limit exceeded. Please wait a few minutes before trying again, or disable email confirmation in your Supabase dashboard.')
+      } else {
+        setError(signUpError.message)
+      }
       setLoading(false)
       return
     }
