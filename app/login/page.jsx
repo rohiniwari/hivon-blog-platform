@@ -18,10 +18,21 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
 
     if (error) {
-      setError(error.message)
+      // Provide a more helpful message for common 400 errors
+      const msg = error.message?.toLowerCase?.() || ''
+      if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
+        setError('Email not confirmed. Please check your inbox and click the confirmation link before signing in.')
+      } else if (msg.includes('invalid login credentials')) {
+        setError('Invalid email or password. Please try again.')
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
     } else {
       router.push('/')

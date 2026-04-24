@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [role, setRole]         = useState('viewer')
   const [error, setError]       = useState('')
+  const [message, setMessage]   = useState('')
   const [loading, setLoading]   = useState(false)
   const router   = useRouter()
   const supabase = createClient()
@@ -19,18 +20,29 @@ export default function RegisterPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setMessage('')
 
     // Sign up with Supabase Auth (trigger will create users row)
     const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
+      email: email.trim().toLowerCase(),
       password,
       options: {
         data: { name, role },  // passed to trigger via raw_user_meta_data
+        emailRedirectTo: `${window.location.origin}/login`,
       },
     })
 
     if (signUpError) {
       setError(signUpError.message)
+      setLoading(false)
+      return
+    }
+
+    // Email confirmation enabled → session is null, show confirmation message
+    if (!data.session && data.user) {
+      setMessage(
+        'Account created! Please check your email and click the confirmation link before signing in.'
+      )
       setLoading(false)
       return
     }
@@ -63,84 +75,100 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Jane Doe"
-            />
+        {message && (
+          <div className="bg-green-50 text-green-700 border border-green-200 p-4 rounded-lg mb-4 text-sm">
+            <p className="font-medium mb-1">{message}</p>
+            <p className="text-green-600">
+              Once confirmed, you can{' '}
+              <Link href="/login" className="underline font-medium">
+                sign in here
+              </Link>.
+            </p>
           </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com"
-            />
-          </div>
+        {!message && (
+          <>
+            <form onSubmit={handleRegister} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Jane Doe"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Min. 6 characters"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="you@example.com"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">I want to…</label>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { value: 'viewer', icon: '👀', label: 'Read & Comment', desc: 'Browse posts and engage' },
-                { value: 'author', icon: '✍️', label: 'Write & Publish', desc: 'Create blog posts' },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setRole(opt.value)}
-                  className={`p-3 rounded-lg border-2 text-left transition ${
-                    role === opt.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-xl mb-1">{opt.icon}</div>
-                  <div className="text-xs font-semibold text-gray-900">{opt.label}</div>
-                  <div className="text-xs text-gray-500">{opt.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Min. 6 characters"
+                />
+              </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 text-sm"
-          >
-            {loading ? 'Creating account…' : 'Create Account'}
-          </button>
-        </form>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">I want to…</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: 'viewer', icon: '👀', label: 'Read & Comment', desc: 'Browse posts and engage' },
+                    { value: 'author', icon: '✍️', label: 'Write & Publish', desc: 'Create blog posts' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setRole(opt.value)}
+                      className={`p-3 rounded-lg border-2 text-left transition ${
+                        role === opt.value
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="text-xl mb-1">{opt.icon}</div>
+                      <div className="text-xs font-semibold text-gray-900">{opt.label}</div>
+                      <div className="text-xs text-gray-500">{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
-          Already have an account?{' '}
-          <Link href="/login" className="text-blue-600 font-medium hover:underline">
-            Sign in
-          </Link>
-        </p>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 text-sm"
+              >
+                {loading ? 'Creating account…' : 'Create Account'}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-gray-500">
+              Already have an account?{' '}
+              <Link href="/login" className="text-blue-600 font-medium hover:underline">
+                Sign in
+              </Link>
+            </p>
+          </>
+        )}
       </div>
     </div>
   )
